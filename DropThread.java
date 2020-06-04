@@ -11,9 +11,9 @@ public class DropThread extends Thread {
     private final double WINDOW_HEIGHT = 420;
     private final double WINDOW_HEIGHT_OFFSET = 98;
     private final double WINDOW_WIDTH_OFFSET = 73;
-    private final double PX_PER_SEC2_Y = EARTH_GRAVITY * WINDOW_HEIGHT / HEIGHT_METERS; //m/s^2 * px / m    //convert to px/s^2 pixels acceleration
-    private final double DECELERATION_DUE_TO_FRICTION = 200; //deceleration when x friction is applied
-    private double xDeceleration = 0; //the active amount of x
+    private final double PX_PER_SEC2_Y = EARTH_GRAVITY * WINDOW_HEIGHT / HEIGHT_METERS; //convert acceleration (m/s^2) to pixels acceleration (px/s^2)
+    private final double DECELERATION_DUE_TO_FRICTION = 200;                            //deceleration when x friction is applied
+    private double xDeceleration = 0;                                                   //the active amount of x
     private double resizeXVelocity = 0, resizeYVelocity = 0;
     private double height=0;
     private double velocity=0;
@@ -29,96 +29,85 @@ public class DropThread extends Thread {
         this.paint = paint;
         this.initialXVelocity = initialXVelocity;
         this.initialYVelocity = initialYVelocity;
-        //System.out.println(initialYVelocity);
         this.window = window;
     }
 
-    public void run() {
-        System.out.println("NEW THREAD      " + isDropping);         // start looping action
-        time.start();                                                // return current time in milliseconds, 0
+    public void run() {                                              // start action
+        System.out.println("NEW THREAD      " + isDropping);         
+        time.start();                                                // return current time in milliseconds, which is 0
         Point startPosition = (Point) paint.getBallLoc().clone();    // get current ball location 
         while (isDropping) {
             int xPos, yPos;
             xPos = paint.getBallLoc().x;
-            final int frictionDirection = initialXVelocity < 0 ? 1 : -1; //if x velocity is negative, friction is +, else friction is -
-            yPos = (int) Math.round(startPosition.y + initialYVelocity * time.getSec() + 0.5 * PX_PER_SEC2_Y * time.getSec() * time.getSec()); //start position + V0t + 1/2 a t^2. + is down
-            xPos = (int) Math.round(startPosition.x + initialXVelocity * time.getSec() + frictionDirection * 0.5 * xDeceleration * time.getSec() * time.getSec()); //same as above. Accleration is 0 except when friction
+            final int frictionDirection = initialXVelocity < 0 ? 1 : -1; //velocity and firction in opposite direction
+            yPos = (int) Math.round(startPosition.y + initialYVelocity * time.getSec() + 0.5 * PX_PER_SEC2_Y * time.getSec() * time.getSec()); // y= y0 + V0t + 1/2 a t^2.
+            xPos = (int) Math.round(startPosition.x + initialXVelocity * time.getSec() + frictionDirection * 0.5 * xDeceleration * time.getSec() * time.getSec()); //x = x0 + V0t + 1/2 a t^2. Friction is in consideration.
             paint.setBallLoc(xPos, yPos);                            // set latest ball location
-            paint.repaint();
             paint.setEnd(false);
+            paint.repaint();
      
-
-            System.out.println(window.getHeight());
-            System.out.println(paint.getBallLoc().y);
-            System.out.println(paint.getBallSize().y);
             height= pixelToMetre((Math.round(window.getHeight() - paint.getBallLoc().y - paint.getBallSize().y)));
             paint.setHeight(height);
-            velocity=pixelToMetre(Math.round(Math.sqrt( Math.pow(initialXVelocity,2)+ Math.pow(initialYVelocity,2))));
-            paint.setVelocity(velocity);
-            energylost=velocity * PERCENT_ENERGY_LOST_BOUNCE;
-            paint.setEnergyLost(energylost);
-            // position= pixelToMetre((Math.round(window.getHeight() - paint.getBallLoc().y - paint.getBallSize().y)));
-            // paint.setHeight(height);
+ 
+            System.out.println("InitialYVelocity: "+Math.abs(initialYVelocity));
+            System.out.println("InitialXVelocity: "+Math.abs(initialXVelocity));
+            System.out.println("Y Location:"+ paint.getBallLoc().y);
             //-----bounce X------
-            if (paint.getBallLoc().x < 0) { //left bounce
+            if (paint.getBallLoc().x < 0) {    //left bounce
                 paint.setBallLoc(0, paint.getBallLoc().y);
-                initialXVelocity = -PERCENT_ENERGY_LOST_BOUNCE * (initialXVelocity + frictionDirection * xDeceleration * time.getSec()); //bounce velocity
-                initialYVelocity = (initialYVelocity + PX_PER_SEC2_Y * time.getSec()); //update y for time drop
-                velocity=pixelToMetre(Math.round(Math.sqrt( Math.pow(initialXVelocity,2)+Math.pow(initialYVelocity,2))));
-                paint.setVelocity(velocity);
-                startPosition = (Point) paint.getBallLoc().clone();  //%update latest position
+                initialXVelocity = -PERCENT_ENERGY_LOST_BOUNCE * (initialXVelocity + frictionDirection * xDeceleration * time.getSec()); //update x velocity with energy lost
+                initialYVelocity = (initialYVelocity + PX_PER_SEC2_Y * time.getSec()); //update y velocity
+                startPosition = (Point) paint.getBallLoc().clone();  //update latest position
                 time.reset();
             } else if (paint.getBallLoc().x > window.getWidth() - WINDOW_WIDTH_OFFSET) { //right bounce
                 paint.setBallLoc((int) (window.getWidth() - WINDOW_WIDTH_OFFSET), paint.getBallLoc().y); //342
-                initialXVelocity = -PERCENT_ENERGY_LOST_BOUNCE * (initialXVelocity + frictionDirection * xDeceleration * time.getSec());
-                initialYVelocity = (initialYVelocity + PX_PER_SEC2_Y * time.getSec());
-                velocity=pixelToMetre(Math.round(Math.sqrt( Math.pow(initialXVelocity,2)+Math.pow(initialYVelocity,2))));
-                paint.setVelocity(velocity);
-                startPosition = (Point) paint.getBallLoc().clone();  //%update latest position
+                initialXVelocity = -PERCENT_ENERGY_LOST_BOUNCE * (initialXVelocity + frictionDirection * xDeceleration * time.getSec()); //update x velocity with energy lost
+                initialYVelocity = (initialYVelocity + PX_PER_SEC2_Y * time.getSec()); //update y velocity
+                startPosition = (Point) paint.getBallLoc().clone();  //update latest position
                 time.reset();
             }
-            //-----bounce Y-----//
+            //-----bounce Y-----
             if (paint.getBallLoc().y < 0) { //top bounce
                 paint.setBallLoc(paint.getBallLoc().x,0);
-                initialYVelocity = -PERCENT_ENERGY_LOST_BOUNCE * (initialYVelocity + PX_PER_SEC2_Y * time.getSec()) + resizeYVelocity; //v = v0 + at
-                initialXVelocity = initialXVelocity + frictionDirection * xDeceleration * time.getSec();
-                velocity=pixelToMetre(Math.round(Math.sqrt( Math.pow(initialXVelocity,2)+Math.pow(initialYVelocity,2))));
-                paint.setVelocity(velocity);
-                startPosition = (Point) paint.getBallLoc().clone();  //%update latest position
+                initialYVelocity = -PERCENT_ENERGY_LOST_BOUNCE * (initialYVelocity + PX_PER_SEC2_Y * time.getSec()) + resizeYVelocity; //update y velocity with energy lost
+                initialXVelocity = initialXVelocity + frictionDirection * xDeceleration * time.getSec(); //update x velocity
+                startPosition = (Point) paint.getBallLoc().clone();  //update latest position
                 time.reset();
             } else if (paint.getBallLoc().y >= window.getHeight() - WINDOW_HEIGHT_OFFSET) { //bottom bounce
                 paint.setBallLoc(paint.getBallLoc().x, (int) (window.getHeight() - WINDOW_HEIGHT_OFFSET)); //420
-                initialYVelocity = -PERCENT_ENERGY_LOST_BOUNCE * (initialYVelocity + PX_PER_SEC2_Y * time.getSec()) + resizeYVelocity; //v = v0 + at
-                initialXVelocity = initialXVelocity + frictionDirection * xDeceleration * time.getSec();
-                velocity=pixelToMetre(Math.round(Math.sqrt( Math.pow(initialXVelocity,2)+Math.pow(initialYVelocity,2))));
-                paint.setVelocity(velocity);
-                //----start over gravity falling time------
-                startPosition = (Point) paint.getBallLoc().clone();
+                initialYVelocity = -PERCENT_ENERGY_LOST_BOUNCE * (initialYVelocity + PX_PER_SEC2_Y * time.getSec()) + resizeYVelocity; //update y velocity with energy lost
+                initialXVelocity = initialXVelocity + frictionDirection * xDeceleration * time.getSec(); //update x velocity
+                startPosition = (Point) paint.getBallLoc().clone();  //update latest position
                 time.reset();
-                //isDropping = false;
             }
             //---reset resize velocity after one pass---
             resizeXVelocity = 0;
             resizeYVelocity = 0;
 
-            //---turn on x frixtion---//           //% ypos > container height - 99 (ball size) [as long friction with the location of top y + bottom (y height inverse)]
+            //---turn on x frixtion---         // velocity very slow at 5 px/s^2 && ypos on the floor, need deceleration
             if (Math.abs(initialYVelocity) < 5 && paint.getBallLoc().y > window.getHeight() - WINDOW_HEIGHT_OFFSET - 1) { //done bouncing
                 xDeceleration = DECELERATION_DUE_TO_FRICTION;         
             } else {
                 xDeceleration = 0;
             }
 
-            //----STOP Thread----                  //% velocity very slow and ypos > container height - 99 (ball size) [as long beyond the location of top y + bottom (y height inverse)]
-            if (Math.abs(initialYVelocity) < 5 && Math.abs(initialXVelocity) < 5 && paint.getBallLoc().y > window.getHeight() - WINDOW_HEIGHT_OFFSET - 1) { //if its not moving on the bottom
-                isDropping = false;
+            //----STOP Thread----              // velocity very slow at 5 px/s^2 && ypos beyond window height - 99 (ball size and offset is take into consideration) 
+            if (Math.abs(initialYVelocity) < 5 && Math.abs(initialXVelocity) < 5 && paint.getBallLoc().y > window.getHeight() - WINDOW_HEIGHT_OFFSET - 1) { 
+                isDropping=false;
+                initialYVelocity=0;
+                initialXVelocity=0;
                 paint.setEnd(true);
             }
 
             paint.repaint();
 
+            velocity=pixelToMetre(Math.round(Math.sqrt( Math.pow(initialXVelocity,2)+ Math.pow(initialYVelocity,2))));
+            paint.setVelocity(velocity);
+            energylost=velocity * PERCENT_ENERGY_LOST_BOUNCE;
+            paint.setEnergyLost(energylost);
             //---processor rest-----
             try {
-                Thread.sleep(30);
+                Thread.sleep(10);
             } catch (final InterruptedException ex) {
                 Logger.getLogger(DropThread.class.getName()).log(Level.SEVERE, null, ex);
             }

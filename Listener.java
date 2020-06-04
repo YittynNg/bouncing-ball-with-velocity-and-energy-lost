@@ -10,7 +10,7 @@ public class Listener implements MouseListener, MouseMotionListener, ComponentLi
 
     private Painter paint;
     private JFrame window;
-    private boolean isHolding = false;                 //if you are clicked and holding on the ball
+    private boolean isHolding = false;                
     private Point delta = new Point(0, 0);
     private DropThread dropThread;                     
     private Timer mouseTime = new Timer();  
@@ -28,19 +28,17 @@ public class Listener implements MouseListener, MouseMotionListener, ComponentLi
     }
 
     @Override
-    public void mouseClicked(MouseEvent me) {
+    public void mouseClicked(MouseEvent me) {          
     }
 
     @Override
     public void mousePressed(MouseEvent me) {
         Point mouseLoc = me.getPoint();
-        // System.out.println(mouseLoc);
         mouseXVelocity = 0;
         mouseYVelocity = 0;
-        // if the click is inside the ball, you are holding it. 
-        // System.out.println("Mouse LOC: " + mouseLoc + "      " + "Ball LOC: " + paint.getBallLoc());
-        isHolding = (ShapeUtils.isPtInCircle(new Point(mouseLoc.x - 12, mouseLoc.y - 33), paint.getBallLoc(), paint.getBallSize())); //20 is offset to align mouse and ball
-        // return true or false is it holding or not 
+        isHolding = (ShapeUtils.isPtInCircle(new Point(mouseLoc.x - 12, mouseLoc.y - 33), paint.getBallLoc(), paint.getBallSize())); 
+        // calculation will return true or false whether is the mouse holding the ball or not 
+        // minus offset to align with the ball
         dropThread.setIsDropping(!isHolding); //if it is holding stop dropping, else keep dropping
         delta.x = (paint.getBallLoc().x - mouseLoc.x);
         delta.y = (paint.getBallLoc().y - mouseLoc.y);
@@ -49,12 +47,12 @@ public class Listener implements MouseListener, MouseMotionListener, ComponentLi
 
     @Override
     public void mouseReleased(MouseEvent me) {
-        if (isHolding) { //if you were holding and just let go
+        if (isHolding) {                      //if you were holding and just let go
             isHolding = false;
-            dropThread.setIsDropping(false); //kill old drop before starting new one
-            dropThread = new DropThread(paint, mouseXVelocity, mouseYVelocity, paint.getWindow());
+            dropThread.setIsDropping(false);  //kill old drop before starting new one
+            dropThread = new DropThread(paint, mouseXVelocity, mouseYVelocity, paint.getWindow());  //add mouse velocity into consideration
             dropThread.start();
-            mouseXVelocity = 0;
+            mouseXVelocity = 0;       //reset mouse velocity
             mouseYVelocity = 0;
         }
     }
@@ -71,16 +69,16 @@ public class Listener implements MouseListener, MouseMotionListener, ComponentLi
     public void mouseDragged(MouseEvent me) {
         Point mouseLoc = me.getPoint();
         if (prevLocation == null) {
-            prevLocation = (Point) mouseLoc.clone();                                              //% get mouse location
+            prevLocation = (Point) mouseLoc.clone();                // get mouse location
         }    
         mouseTime.stop();
 
-        if (mouseTime.getSec() > 0) { //divide by 0 protect
-            mouseXVelocity = (double) (mouseLoc.x - prevLocation.x) / mouseTime.getSec();         //% get mouse velocity (dragging fast than 0)
+        if (mouseTime.getSec() > 0) {                                                             // if still dragging as the speed > 0
+            mouseXVelocity = (double) (mouseLoc.x - prevLocation.x) / mouseTime.getSec();         // get mouse velocity. Once mouse release, will bring the velocity to mouseReleased function
             mouseYVelocity = (double) (mouseLoc.y - prevLocation.y) / mouseTime.getSec();
         }
 
-        if (isHolding) {                                                                          //% reset ball location (if still holding), action (if released)
+        if (isHolding) {                                                                          // if stil holding or dragging, keep update the ball location; else go to mouseReleased function
             paint.setBallLoc(delta.x + mouseLoc.x, delta.y + mouseLoc.y);
             if (paint.getBallLoc().x > window.getWidth() - WINDOW_WIDTH_OFFSET) {
                 paint.setBallLoc((int) (window.getWidth() - WINDOW_WIDTH_OFFSET), paint.getBallLoc().y);
